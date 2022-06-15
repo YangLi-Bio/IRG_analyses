@@ -50,20 +50,20 @@ library(dplyr)
 genes.ll <- lapply(egrns.ll, "[[", "genes") %>% sapply(., length)
 range(genes.ll)
 p.genes <- get_boxplot(obj = genes.ll, path = NULL,
-            y.lab = "Genes", color = "black", fill = "#BE2A3E")
+            y.lab = "Genes", color = "black", fill = "#00bfc4")
 print(p.genes)
 peaks.ll <- lapply(egrns.ll, "[[", "peaks") %>% sapply(., length)
 range(peaks.ll)
 p.peaks <- get_boxplot(obj = peaks.ll, path = NULL,
-                       y.lab = "CREs", color = "black", fill = "#BE2A3E")
+                       y.lab = "CREs", color = "black", fill = "#00bfc4")
 print(p.peaks)
 cells.ll <- lapply(egrns.ll, "[[", "cells") %>% sapply(., length)
 range(peaks.ll)
 p.cells <- get_boxplot(obj = cells.ll, path = NULL,
-                       y.lab = "Cells", color = "black", fill = "#BE2A3E")
+                       y.lab = "Cells", color = "black", fill = "#00bfc4")
 print(p.cells)
 p.irg <- get_boxplot(obj = irg.ratios * 100, path = NULL,
-            y.lab = "IRG ratio (%)", color = "black", fill = "#BE2A3E")
+            y.lab = "IRG ratio (%)", color = "black", fill = "#00bfc4")
 print(p.irg)
 library(ggplotify)
 p.boxplot <- as.ggplot(p.genes / p.peaks / p.cells / p.irg)
@@ -311,9 +311,10 @@ p.tumor.STAT3.box <- get_boxplot(obj = obj, path = NULL, x.lab = "Sample",
 # Merge the boxplots
 p.IgHV.box <- ggpubr::ggarrange(p.IgHV.UMAP, p.tumor.MYCN1.box, p.tumor.MYCN2.box, 
                                 p.tumor.JUN.box, p.tumor.STAT3.box, 
+                                widths = c(5, 1, 1, 1, 1), 
                                 nrow = 1, labels = c("B", "C", "D", "E", "F"))
 # p.IgHV.box <- p.IgHV.UMAP | p.tumor.MYCN1.box | p.tumor.MYCN2.box | p.tumor.JUN.box | p.tumor.STAT3.box
-qs::qsave(p.tumor.box, paste0(work.dir, "Boxplots_GSVA_IgHV.qsave"))
+qs::qsave(p.IgHV.box, paste0(work.dir, "Boxplots_GSVA_IgHV.qsave"))
 
 
 ##################################################################################
@@ -567,9 +568,10 @@ p.TP53.STAT3.box <- get_boxplot(obj = obj, path = NULL, x.lab = "Sample",
 # Merge the boxplots
 p.TP53.box <- ggpubr::ggarrange(p.TP53.UMAP, p.TP53.MYOG1.box, p.TP53.MYOG2.box, 
                                 p.TP53.JUN.box, p.TP53.STAT3.box, 
+                                widths = c(5, 1, 1, 1, 1), 
                                 nrow = 1, labels = c("G", "H", "I", "J", "K"))
 # p.TP53.box <- p.TP53.UMAP | p.TP53.MYOG1.box | p.TP53.MYOG2.box | p.TP53.JUN.box | p.TP53.STAT3.box
-qs::qsave(p.TP53.box, paste0(phenotype.dir, "Boxplots_GSVA_TP53.qsave"))
+qs::qsave(p.TP53.box, paste0(work.dir, "Boxplots_GSVA_TP53.qsave"))
 
 
 ##################################################################################
@@ -804,7 +806,9 @@ p.cox.box <- ggpubr::ggarrange(p.cox.UMAP, ggpubr::ggarrange(p.cox.MYCN1$plot, p
                                                 ncol = 1, heights = c(3, 1)),
                                ggpubr::ggarrange(p.cox.KLF5$plot, p.cox.KLF5$table, 
                                                 ncol = 1, heights = c(3, 1)),
+                               widths = c(5, 1, 1, 1, 1), 
                                 nrow = 1, labels = c("L", "M", "N", "O", "P"))
+qs::qsave(p.cox.box, paste0(work.dir, "KM_curves_GSVA_survival.qsave"))
 # p.cox.box <- ggpubr::ggarrange(p.cox.UMAP, p.cox.MYCN1$plot / p.cox.MYCN1$table, 
 #                                p.cox.MYCN2$plot /  p.cox.MYCN2$table, 
 #                                p.cox.JUN$plot / p.cox.JUN$table, 
@@ -822,7 +826,7 @@ p.cox.box <- ggpubr::ggarrange(p.cox.UMAP, ggpubr::ggarrange(p.cox.MYCN1$plot, p
 # Merge all panels
 p.IRG <- ggpubr::ggarrange(p.boxplot, ggpubr::ggarrange(p.IgHV.box, 
                                                         p.TP53.box, 
-                                                        p.cox.KM, ncol = 1, 
+                                                        p.cox.box, ncol = 1, 
                                                         heights = c(1, 1, 1)), 
                             ncol = 2, widths = c(1, 8), labels = c("A", NA))
 
