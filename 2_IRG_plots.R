@@ -226,7 +226,7 @@ qs::qsave(lymph.obj, paste0(work.dir, "lymph_obj.qsave"))
 Idents(lymph.obj) <- lymph.obj$IgHV.phenotype
 p.IgHV.UMAP <- get_UMAP(object = lymph.obj, reduction.method = "wnn.umap",
                    txt = "IgHV")
-qs::qsave(p.IgHV.UMAP, paste0(phenotype.dir, "UMAP.qsave"))
+qs::qsave(p.IgHV.UMAP, paste0(work.dir, "IgHV_UMAP.qsave"))
 
 
 # Generate boxplots for the two MYCN eGRNs
