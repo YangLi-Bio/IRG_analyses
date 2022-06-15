@@ -66,7 +66,7 @@ p.irg <- get_boxplot(obj = irg.ratios * 100, path = NULL,
             y.lab = "IRG ratio (%)", color = "black", fill = "#BE2A3E")
 print(p.irg)
 library(ggplotify)
-p.boxplot <- as.ggplot(p.genes | p.peaks | p.cells | p.irg)
+p.boxplot <- as.ggplot(p.genes / p.peaks / p.cells / p.irg)
 qs::qsave(p.boxplot, paste0(work.dir, "Genes_CREs_cells_IRGs.qsave"))
 
 
@@ -309,7 +309,10 @@ p.tumor.STAT3.box <- get_boxplot(obj = obj, path = NULL, x.lab = "Sample",
 
 
 # Merge the boxplots
-p.IgHV.box <- p.IgHV.UMAP | p.tumor.MYCN1.box | p.tumor.MYCN2.box | p.tumor.JUN.box | p.tumor.STAT3.box
+p.IgHV.box <- ggpubr::ggarrange(p.IgHV.UMAP, p.tumor.MYCN1.box, p.tumor.MYCN2.box, 
+                                p.tumor.JUN.box, p.tumor.STAT3.box, 
+                                nrow = 1, labels = c("B", "C", "D", "E", "F"))
+# p.IgHV.box <- p.IgHV.UMAP | p.tumor.MYCN1.box | p.tumor.MYCN2.box | p.tumor.JUN.box | p.tumor.STAT3.box
 qs::qsave(p.tumor.box, paste0(work.dir, "Boxplots_GSVA_IgHV.qsave"))
 
 
@@ -562,8 +565,11 @@ p.TP53.STAT3.box <- get_boxplot(obj = obj, path = NULL, x.lab = "Sample",
 
 
 # Merge the boxplots
-p.TP53.box <- p.TP53.UMAP | p.TP53.MYOG1.box | p.TP53.MYOG2.box | p.TP53.JUN.box | p.TP53.STAT3.box
-qs::qsave(phenotype.dir, "Boxplots_GSVA_TP53.qsave")
+p.TP53.box <- ggpubr::ggarrange(p.TP53.UMAP, p.TP53.MYOG1.box, p.TP53.MYOG2.box, 
+                                p.TP53.JUN.box, p.TP53.STAT3.box, 
+                                nrow = 1, labels = c("G", "H", "I", "J", "K"))
+# p.TP53.box <- p.TP53.UMAP | p.TP53.MYOG1.box | p.TP53.MYOG2.box | p.TP53.JUN.box | p.TP53.STAT3.box
+qs::qsave(p.TP53.box, paste0(phenotype.dir, "Boxplots_GSVA_TP53.qsave"))
 
 
 ##################################################################################
@@ -790,9 +796,20 @@ p.cox.KLF5 <- get_KM_curve(meta.df = cox.KM.df, category = "GSVA", path = NULL, 
                           risk.table = T, palette = c("red", "blue"), 
                           legend.title = "GSVA enrichment score")
 
-p.cox.KM <- p.cox.UMAP | (p.cox.MYCN1$plot / p.cox.MYCN1$table) | 
-  (p.cox.MYCN2$plot /  p.cox.MYCN2$table) | (p.cox.JUN$plot / p.cox.JUN$table) | 
-  (p.cox.KLF5$plot / p.cox.KLF5$table)
+p.cox.box <- ggpubr::ggarrange(p.cox.UMAP, ggpubr::ggarrange(p.cox.MYCN1$plot, p.cox.MYCN1$table, 
+                                                             ncol = 1, heights = c(3, 1)), 
+                               ggpubr::ggarrange(p.cox.MYCN2$plot, p.cox.MYCN2$table, 
+                                                ncol = 1, heights = c(3, 1)),
+                               ggpubr::ggarrange(p.cox.JUN$plot, p.cox.JUN$table, 
+                                                ncol = 1, heights = c(3, 1)),
+                               ggpubr::ggarrange(p.cox.KLF5$plot, p.cox.KLF5$table, 
+                                                ncol = 1, heights = c(3, 1)),
+                                nrow = 1, labels = c("L", "M", "N", "O", "P"))
+# p.cox.box <- ggpubr::ggarrange(p.cox.UMAP, p.cox.MYCN1$plot / p.cox.MYCN1$table, 
+#                                p.cox.MYCN2$plot /  p.cox.MYCN2$table, 
+#                                p.cox.JUN$plot / p.cox.JUN$table, 
+#                                p.cox.KLF5$plot / p.cox.KLF5$table, 
+#                                nrow = 1, labels = c("L", "M", "N", "O", "P"))
 
 
 ##################################################################################
@@ -803,79 +820,78 @@ p.cox.KM <- p.cox.UMAP | (p.cox.MYCN1$plot / p.cox.MYCN1$table) |
 
 
 # Merge all panels
-p.IRG <- ggpubr::ggarrange(p.boxplot, 
-                           ggpubr::ggarrange(p.tumor, p.tumor.box, ncol = 2, labels = c("B", "C"), 
-                                             widths = c(1, 2)), 
-                           ggpubr::ggarrange(p.TP53, p.TP53.box, ncol = 2, labels = c("D", "E"), 
-                                             widths = c(1, 2)), 
-                           ggpubr::ggarrange(p.cox, p.cox.KM, ncol = 2, labels = c("F", "G"), 
-                                             widths = c(1, 2)), 
-          ncol = 1, heights = c(2, 1, 1, 2))
+p.IRG <- ggpubr::ggarrange(p.boxplot, ggpubr::ggarrange(p.IgHV.box, 
+                                                        p.TP53.box, 
+                                                        p.cox.KM, ncol = 1, 
+                                                        heights = c(1, 1, 1)), 
+                            ncol = 2, widths = c(1, 8), labels = c("A", NA))
+
 # save_image(p = p.IRG, path = paste0(work.dir, "IRG.eps"))
+qs::qsave(p.IRG, paste0(work.dir, "IRG_plots.qsave"))
 save_image(p = p.IRG, path = paste0(work.dir, "IRG.png"), 
            width = 6000, height = 5000)
 
 
-# 1. Save the boxplots
-save_image(p = p.boxplot, path = paste0(work.dir, "1_boxplots.eps"), 
-           width = 3000, height = 500)
-
-
-# 2. Save the UMAP plot of tumor v.s. healthy
-save_image(p = p.tumor, path = paste0(work.dir, "1_UMAP_tumor.eps"))
-
-
-# 3. Save the boxplots of four eGRNs between tumor v.s. healthy
-save_image(p = p.tumor.box, path = paste0(work.dir, "1_boxplots_GSVA.eps"))
-
-
-# 4. Save the UMAP plot of TP53 v.s. unmutated
-save_image(p = p.TP53, path = paste0(work.dir, "2_UMAP_TP53.eps"))
-
-
-# 5. Save the boxplots of four eGRNs between TP53 v.s. unmutated
-save_image(p = p.TP53.box, path = paste0(work.dir, "2_boxplots_GSVA.eps"))
-
-
-# 6. Save the UMAP plot of four eGRNs associated with survival
-save_image(p = p.cox, path = paste0(work.dir, "3_UMAP_survival.eps"))
-
-
-# 7. Save the Kaplan-Meier curve of four eGRNs associated with survival
-save_image(p = p.cox.KM, path = paste0(work.dir, "3_KM_survival.eps"))
-
-
-##################################################################################
-#                                                                                #
-#                                Merge all the panels                            #
-#                                                                                #
-##################################################################################
-
-
-library(ggpubr)
-# p <- (p.boxplot | p.heatmap | p.ct) / (p.phenotype.piechart | pos.bar | p.kegg.bars)
-# print(p)
-# save_image(p.boxplot | p.heatmap | p.ct, path = paste0(work.dir, "IRG_up.eps"))
-# save_image(p.phenotype.piechart | pos.bar | p.kegg.bars, path = paste0(work.dir, "IRG_down.eps"))
-# p <- ggarrange(p.boxplot, p.ct, p.phenotype, 
-#           nrow = 1, labels = c("A", "B", "C"))
-# p <- ggdraw() + draw_plot(p.boxplot, x = 0, y = .5, width = .5)
-p.box.phenotype.ct <- egg::ggarrange(p.boxplot, p.ct, p.phenotype, heights = 1, 
-                  widths = c(1, 1.5, 1.5), nrow = 1, labels = c("A", "B", "C"))
-p.box.phenotype.ct
-save_image(p = p.box.phenotype.ct, width = 1000, height = 500, 
-           path = paste0(phenotype.dir, "boxplot_UMAP_Scissor_CT.eps"))
-
-
-# Save the images of the piechart of phenotype, barplot of Scissor+ cell distribution across
-# cell types, and barplot of KEGG pathway analysis
-save_image(p = p.phenotype.piechart, width = 500, height = 300, 
-           path = paste0(phenotype.dir, "piechart.eps"))
-save_image(p = pos.bar, width = 500, height = 500, 
-           path = paste0(phenotype.dir, "barplot_Scissor+_CTs.eps"))
-save_image(p = p.kegg.bars, width = 500, height = 500, 
-           path = paste0(phenotype.dir, "barplot_KEGG_pathways.eps"))
-# p.heatmap.pie.bar.enrich <- egg::ggarrange(p.phenotype.piechart, pos.bar, p.kegg.bars, 
-#                                            heights = 1, widths = c(1, 1, 1), nrow = 1,
-#                                            labels = c("E", "F", "G"))
-# p.heatmap.pie.bar.enrich
+# # 1. Save the boxplots
+# save_image(p = p.boxplot, path = paste0(work.dir, "1_boxplots.eps"), 
+#            width = 3000, height = 500)
+# 
+# 
+# # 2. Save the UMAP plot of tumor v.s. healthy
+# save_image(p = p.tumor, path = paste0(work.dir, "1_UMAP_tumor.eps"))
+# 
+# 
+# # 3. Save the boxplots of four eGRNs between tumor v.s. healthy
+# save_image(p = p.tumor.box, path = paste0(work.dir, "1_boxplots_GSVA.eps"))
+# 
+# 
+# # 4. Save the UMAP plot of TP53 v.s. unmutated
+# save_image(p = p.TP53, path = paste0(work.dir, "2_UMAP_TP53.eps"))
+# 
+# 
+# # 5. Save the boxplots of four eGRNs between TP53 v.s. unmutated
+# save_image(p = p.TP53.box, path = paste0(work.dir, "2_boxplots_GSVA.eps"))
+# 
+# 
+# # 6. Save the UMAP plot of four eGRNs associated with survival
+# save_image(p = p.cox, path = paste0(work.dir, "3_UMAP_survival.eps"))
+# 
+# 
+# # 7. Save the Kaplan-Meier curve of four eGRNs associated with survival
+# save_image(p = p.cox.KM, path = paste0(work.dir, "3_KM_survival.eps"))
+# 
+# 
+# ##################################################################################
+# #                                                                                #
+# #                                Merge all the panels                            #
+# #                                                                                #
+# ##################################################################################
+# 
+# 
+# library(ggpubr)
+# # p <- (p.boxplot | p.heatmap | p.ct) / (p.phenotype.piechart | pos.bar | p.kegg.bars)
+# # print(p)
+# # save_image(p.boxplot | p.heatmap | p.ct, path = paste0(work.dir, "IRG_up.eps"))
+# # save_image(p.phenotype.piechart | pos.bar | p.kegg.bars, path = paste0(work.dir, "IRG_down.eps"))
+# # p <- ggarrange(p.boxplot, p.ct, p.phenotype, 
+# #           nrow = 1, labels = c("A", "B", "C"))
+# # p <- ggdraw() + draw_plot(p.boxplot, x = 0, y = .5, width = .5)
+# p.box.phenotype.ct <- egg::ggarrange(p.boxplot, p.ct, p.phenotype, heights = 1, 
+#                   widths = c(1, 1.5, 1.5), nrow = 1, labels = c("A", "B", "C"))
+# p.box.phenotype.ct
+# save_image(p = p.box.phenotype.ct, width = 1000, height = 500, 
+#            path = paste0(phenotype.dir, "boxplot_UMAP_Scissor_CT.eps"))
+# 
+# 
+# # Save the images of the piechart of phenotype, barplot of Scissor+ cell distribution across
+# # cell types, and barplot of KEGG pathway analysis
+# save_image(p = p.phenotype.piechart, width = 500, height = 300, 
+#            path = paste0(phenotype.dir, "piechart.eps"))
+# save_image(p = pos.bar, width = 500, height = 500, 
+#            path = paste0(phenotype.dir, "barplot_Scissor+_CTs.eps"))
+# save_image(p = p.kegg.bars, width = 500, height = 500, 
+#            path = paste0(phenotype.dir, "barplot_KEGG_pathways.eps"))
+# # p.heatmap.pie.bar.enrich <- egg::ggarrange(p.phenotype.piechart, pos.bar, p.kegg.bars, 
+# #                                            heights = 1, widths = c(1, 1, 1), nrow = 1,
+# #                                            labels = c("E", "F", "G"))
+# # p.heatmap.pie.bar.enrich
