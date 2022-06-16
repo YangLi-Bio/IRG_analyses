@@ -37,7 +37,7 @@ length(IRG.eGRNs)
 
 ##################################################################################
 #                                                                                #
-#                     Prepare csv files for important networks                   #
+#            Determine the TFs for Cytoscape to generate networks                #
 #                                                                                #
 ##################################################################################
 
@@ -125,3 +125,105 @@ JUN$TF
 # length(JUN.cox_G)
 # JUN.cox_R <- setdiff(cox.eGRNs[[49]]$peaks, TP53.eGRNs[[49]]$peaks) %>% setdiff(., IgHV.eGRNs[[49]]$peaks)
 # length(JUN.cox_R)
+
+
+##################################################################################
+#                                                                                #
+#            Prepare csv files for Cytoscape to generate networks                #
+#                                                                                #
+##################################################################################
+
+
+# Selected eGRNs : MYCN_1, JUN and STAT3, and JUN : 12, (49, 44), 49
+selected.IDs <- c(12, 44, 49)
+library(pbapply)
+source("/fs/ess/PCON0022/liyang/r_utilities/functions/cistrome_tools.R")
+cistrome.list <- pblapply(selected.IDs, function(i) {
+  eGRN <- list(peaks = IRG.eGRNs[[i]]$peaks, genes = IRG.eGRNs[[i]]$genes, 
+              TF = IRG.eGRNs[[i]]$TF)
+  link_peaks_to_genes(peak.obj = eGRN$peaks, gene.obj = eGRN$genes, 
+                      distance = "gene")
+})
+qs::qsave(cistrome.list, paste0(work.dir, "Cistrome_list.qsave"))
+
+
+# Prepare txt files for the first MYCN (ID = 12)
+prepare_Cytoscape(gr = cistrome.list[[1]], node.table = T, 
+                  path = paste0(work.dir, "MYCN"))
+MYCN.df <- read.table(paste0(work.dir, "MYCN_nodes.txt"), header = T)
+head(MYCN.df)
+rownames(MYCN.df) <- MYCN.df$Nodes
+head(MYCN.df)
+MYCN.blue <- setdiff(IgHV.eGRNs[[12]]$up, cox.eGRNs[[12]]$up) # IgHV
+MYCN.yellow <- setdiff(cox.eGRNs[[12]]$up, IgHV.eGRNs[[12]]$up) # Cox
+# MYCN.grey <- setdiff(MYCN.df$Nodes, MYCN.blue) %>% setdiff(., MYCN.yellow)
+MYCN.df <- cbind(MYCN.df, Color = "grey")
+MYCN.df[MYCN.blue, "Color"] <- "blue"
+MYCN.df[MYCN.yellow, "Color"] <- "yellow"
+MYCN.df$Color <- factor(MYCN.df$Color, levels = c("red", "blue", "green", 
+                                                  "yellow", "grey"))
+head(MYCN.df)
+tail(MYCN.df$Color)
+write.table(MYCN.df, paste0(work.dir, "MYCN_nodes.txt"), 
+            quote = F, row.names = F, sep = "\t")
+
+
+# Prepare txt files for JUN and STAT3 (IDs = 49, 44)
+JUN.list <- cistrome.list[[3]]
+STAT3.list <- cistrome.list[[2]]
+JUN_STAT3.list <- JUN.list[JUN.list$gene %in% JUN_STAT3.G_overlap]
+# JUN.peaks <- GRangesToString(JUN.list)
+# JUN.list <- JUN.list[JUN.peaks %in% JUN_STAT3.R_overlap]
+prepare_Cytoscape(gr = JUN_STAT3.list, node.table = T, 
+                  path = paste0(work.dir, "JUN_and_STAT3"))
+JUN.STAT3.df <- read.table(paste0(work.dir, "JUN_and_STAT3_nodes.txt"), header = T)
+head(JUN.STAT3.df)
+rownames(JUN.STAT3.df) <- JUN.STAT3.df$Nodes
+head(JUN.STAT3.df)
+JUN.STAT3.red <- intersect(unique(JUN.STAT3.df$Nodes), IgHV.eGRNs[[49]]$up) %>% 
+  intersect(., IgHV.eGRNs[[44]]$up) %>% intersect(., TP53.eGRNs[[49]]$up) %>% 
+  intersect(., TP53.eGRNs[[44]]$up)
+JUN.STAT3.blue <- intersect(JUN.STAT3.df$Nodes, IgHV.eGRNs[[49]]$up) %>% 
+  intersect(., IgHV.eGRNs[[44]]$up) %>% setdiff(., TP53.eGRNs[[44]]$up) %>% 
+  setdiff(., TP53.eGRNs[[49]]$up) # IgHV
+JUN.STAT3.green <- intersect(JUN.STAT3.df$Nodes, TP53.eGRNs[[49]]$up) %>% 
+  intersect(., TP53.eGRNs[[44]]$up) %>% setdiff(., IgHV.eGRNs[[44]]$up) %>% 
+  setdiff(., IgHV.eGRNs[[49]]$up) # TP53
+# MYCN.grey <- setdiff(MYCN.df$Nodes, MYCN.blue) %>% setdiff(., MYCN.yellow)
+JUN.STAT3.df <- cbind(JUN.STAT3.df, Color = "grey")
+JUN.STAT3.df[JUN.STAT3.red,]$Color <- "red"
+JUN.STAT3.df[JUN.STAT3.blue,]$Color <- "blue"
+JUN.STAT3.df[JUN.STAT3.green,]$Color <- "green"
+JUN.STAT3.df$Color <- factor(JUN.STAT3.df$Color, levels = c("red", "blue", "green", 
+                                                  "yellow", "grey"))
+head(JUN.STAT3.df)
+tail(JUN.STAT3.df$Color)
+write.table(JUN.STAT3.df, paste0(work.dir, "JUN_STAT3_nodes.txt"), 
+            quote = F, row.names = F, sep = "\t")
+
+
+# Prepare txt files for JUN (ID = 49)
+prepare_Cytoscape(gr = cistrome.list[[3]], node.table = T, 
+                  path = paste0(work.dir, "JUN"))
+JUN.df <- read.table(paste0(work.dir, "JUN_nodes.txt"), header = T)
+head(JUN.df)
+rownames(JUN.df) <- JUN.df$Nodes
+head(JUN.df)
+JUN.red <- intersect(unique(JUN.df$Nodes), IgHV.eGRNs[[49]]$up) %>% 
+  intersect(., TP53.eGRNs[[49]]$up) %>% intersect(., cox.eGRNs[[49]]$up)
+JUN.blue <- intersect(unique(JUN.df$Nodes), IgHV.eGRNs[[49]]$up) %>% 
+  setdiff(., cox.eGRNs[[49]]$up) %>% setdiff(., TP53.eGRNs[[49]]$up) # IgHV
+JUN.yellow <- intersect(unique(JUN.df$Nodes), cox.eGRNs[[49]]$up) %>% 
+  setdiff(., IgHV.eGRNs[[49]]$up) %>% setdiff(., TP53.eGRNs[[49]]$up) # Cox
+JUN.green <- intersect(unique(JUN.df$Nodes), TP53.eGRNs[[49]]$up) %>% 
+  setdiff(., IgHV.eGRNs[[49]]$up) %>% setdiff(., cox.eGRNs[[49]]$up) # TP53
+JUN.df <- cbind(JUN.df, Color = "grey")
+JUN.df[JUN.red,]$Color <- "red"
+JUN.df[JUN.blue,]$Color <- "blue"
+JUN.df[JUN.yellow,]$Color <- "yellow"
+JUN.df$Color <- factor(JUN.df$Color, levels = c("red", "blue", "green", 
+                                                  "yellow", "grey"))
+head(JUN.df)
+tail(JUN.df$Color)
+write.table(JUN.df, paste0(work.dir, "JUN_nodes.txt"), 
+            quote = F, row.names = F, sep = "\t")
