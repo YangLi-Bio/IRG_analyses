@@ -66,13 +66,20 @@ p.irg <- get_boxplot(obj = irg.ratios * 100, path = NULL,
             y.lab = "IRG ratio (%)", color = "black", fill = "#00bfc4")
 print(p.irg)
 library(ggplotify)
-p.boxplot <- as.ggplot(p.genes / p.peaks / p.cells / p.irg)
-qs::qsave(p.boxplot, paste0(work.dir, "Genes_CREs_cells_IRGs.qsave"))
+# p.boxplot <- as.ggplot((p.genes | p.peaks) / (p.cells | p.irg))
+
+
+# Supplementary Figure S1A-S1D
+p.boxplot <- ggpubr::ggarrange(p.genes, p.peaks, p.cells, p.irg, 
+                               ncol = 4)
+figure.s1.dor <- "Figures_S1/"
+qs::qsave(p.boxplot, paste0(R.dir, figure.s1.dor, 
+                            "Genes_CREs_cells_IRGs.qsave"))
 
 
 ##################################################################################
 #                                                                                #
-#                 2. Ten eGRNs distinguished IgHV v.s. others                   #
+#                 2. Ten eGRNs distinguished IgHV v.s. others                    #
 #                                                                                #
 ##################################################################################
 
@@ -96,6 +103,42 @@ tumor.dt <- rbindlist(lapply(irg.egrns, function(x) {
 }))
 tumor.dt <- cbind(eGRN = seq_along(irg.egrns), tumor.dt)
 head(tumor.dt)
+
+
+p.IgHV.ratio <- ggplot(tumor.dt, aes(y = Plus)) + 
+  geom_boxplot(fill = "slateblue", alpha = 0.2) + 
+  ylab("Ratio of IgHV-associated cells") + xlab("")
+p.IgHV.ratio
+
+
+# Supplementary Figure S1E
+tumor.dt
+dim(tumor.dt)
+head(tumor.dt)
+tumor.stacked.df <- rbind(data.frame(eGRN = tumor.dt$eGRN, 
+                                     Phenotype = rep("IgHV", 
+                                                     nrow(tumor.dt)), 
+                                     Ratio = tumor.dt$Plus), 
+                          data.frame(eGRN = tumor.dt$eGRN, 
+                                     Phenotype = rep("unmutated", 
+                                                     nrow(tumor.dt)), 
+                                     Ratio = tumor.dt$Minus), 
+                          data.frame(eGRN = tumor.dt$eGRN, 
+                                     Phenotype = rep("Background", 
+                                                     nrow(tumor.dt)), 
+                                     Ratio = 1 - tumor.dt$Plus - tumor.dt$Minus))
+dim(tumor.stacked.df)
+head(tumor.stacked.df)
+tumor.stacked.df$Phenotype <- factor(tumor.stacked.df$Phenotype, levels = c("IgHV", "Background", 
+                                                                            "unmutated"))
+p.IgHV.stacked <- ggplot(tumor.stacked.df, aes(fill = Phenotype, y = Ratio, x = eGRN)) + 
+  geom_bar(position = "fill", stat = "identity") + xlab("") + 
+  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank()) + 
+  scale_fill_manual(values = c("red", "grey", "blue"))
+p.IgHV.stacked
+qs::qsave(p.IgHV.stacked, paste0(R.dir, figure.s1.dor, "IgHV_stacked.qsave"))
+
+
 tumor.dt
 range(tumor.dt$Minus)
 range(tumor.dt$Plus)
@@ -139,6 +182,22 @@ length(tumor.up.DEGs)
 tumor.down.DEGs <- rownames(tumor.DEGs[tumor.DEGs$p_val_adj < 0.05 & 
                                        tumor.DEGs$avg_log2FC < -0.25,])
 length(tumor.down.DEGs)
+
+
+# Supplementary Figure S1F
+colnames(tumor.DEGs)
+range(tumor.DEGs$avg_log2FC)
+tumor.DEGs.plot <- tumor.DEGs[is.finite(tumor.DEGs$avg_log2FC),]
+p.IgHV.volcano <- EnhancedVolcano(tumor.DEGs.plot, lab = rownames(tumor.DEGs.plot), 
+                x = "avg_log2FC", y = "p_val", xlim = c(-200, 200), 
+                pCutoff = 0.05, 
+                FCcutoff = 1.5,
+                title = "IgHV v.s. unmutated status")
+p.IgHV.volcano
+qs::qsave(p.IgHV.volcano, paste0(R.dir, figure.s1.dor, "Volcano_IgHV.qsave"))
+
+
+
 tumor.eGRNs <- lapply(irg.egrns, function(x) {
   xx <- x
   xx$up <- intersect(tumor.up.DEGs, xx$genes)
@@ -150,6 +209,16 @@ qs::qsave(tumor.eGRNs, paste0(tumor.dir, "DEG_eGRNs.qsave"))
 tumor.up.DEG.ratio <- sapply(tumor.eGRNs, function(x) {
   length(x$up) / length(x$genes)
 })
+
+
+# Supplementary Figure S1G
+p.IgHV.up.DEG.ratio <- ggplot(data.frame(Ratio = tumor.up.DEG.ratio), 
+                              aes(y = Ratio)) + 
+  geom_boxplot(fill = "slateblue", alpha = 0.2) + 
+  ylab("Ratio of upregulated DEGs in each eGRN") + xlab("")
+p.IgHV.up.DEG.ratio
+
+
 tumor.down.DEG.ratio <- sapply(tumor.eGRNs, function(x) {
   length(x$down) / length(x$genes)
 })
@@ -249,6 +318,9 @@ obj$Sample <- factor(obj$Sample, levels = c("IgHV", "unmutated"))
 p.tumor.MYCN1.box <- get_boxplot(obj = obj, path = NULL, x.lab = "Sample",
                        y.lab = "GSVA", color = "black", title = "MYCN", 
                        fill = c("IgHV" = "red", "unmutated" = "blue"))
+# wilcox.test(x = obj[obj$Sample == "IgHV",]$GSVA, 
+#             y = obj[obj$Sample == "unmutated",]$GSVA, 
+#             alternative = "g")$p.value
 
 
 # Generate boxplot for the second eGRN of MYCN
@@ -311,8 +383,8 @@ p.tumor.STAT3.box <- get_boxplot(obj = obj, path = NULL, x.lab = "Sample",
 # Merge the boxplots
 p.IgHV.box <- ggpubr::ggarrange(p.IgHV.UMAP, p.tumor.MYCN1.box, p.tumor.MYCN2.box, 
                                 p.tumor.JUN.box, p.tumor.STAT3.box, 
-                                widths = c(5, 1, 1, 1, 1), 
-                                nrow = 1, labels = c("B", "C", "D", "E", "F"))
+                                widths = c(2, 1, 1, 1, 1), 
+                                nrow = 1, labels = LETTERS[1:5])
 # p.IgHV.box <- p.IgHV.UMAP | p.tumor.MYCN1.box | p.tumor.MYCN2.box | p.tumor.JUN.box | p.tumor.STAT3.box
 qs::qsave(p.IgHV.box, paste0(work.dir, "Boxplots_GSVA_IgHV.qsave"))
 
@@ -357,6 +429,35 @@ length(TP53.phenotype)
 names(TP53.phenotype) <- c(TP53.plus.cells, TP53.minus.cells, setdiff(colnames(lymph.obj), 
                                                                       c(TP53.plus.cells, 
                                                                         TP53.minus.cells)))
+
+# Supplementary Figure S1H
+TP53.dt
+dim(TP53.dt)
+head(TP53.dt)
+TP53.stacked.df <- rbind(data.frame(eGRN = TP53.dt$eGRN, 
+                                     Phenotype = rep("TP53", 
+                                                     nrow(TP53.dt)), 
+                                     Ratio = TP53.dt$Plus), 
+                          data.frame(eGRN = TP53.dt$eGRN, 
+                                     Phenotype = rep("unmutated", 
+                                                     nrow(TP53.dt)), 
+                                     Ratio = TP53.dt$Minus), 
+                          data.frame(eGRN = TP53.dt$eGRN, 
+                                     Phenotype = rep("Background", 
+                                                     nrow(TP53.dt)), 
+                                     Ratio = 1 - TP53.dt$Plus - TP53.dt$Minus))
+dim(TP53.stacked.df)
+head(TP53.stacked.df)
+TP53.stacked.df$Phenotype <- factor(TP53.stacked.df$Phenotype, levels = c("TP53", "Background", 
+                                                                            "unmutated"))
+TP53.stacked <- ggplot(TP53.stacked.df, aes(fill = Phenotype, y = Ratio, x = eGRN)) + 
+  geom_bar(position = "fill", stat = "identity") + xlab("") + 
+  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank()) + 
+  scale_fill_manual(values = c("red", "grey", "blue"))
+TP53.stacked
+qs::qsave(TP53.stacked, paste0(R.dir, figure.s1.dor, "TP53_stacked.qsave"))
+
+
 head(TP53.phenotype)
 lymph.obj <- AddMetaData(lymph.obj, metadata = TP53.phenotype, 
                          col.name = "TP53.phenotype")
@@ -401,6 +502,27 @@ TP53.down.DEG.ratio <- sapply(TP53.eGRNs, function(x) {
 })
 which.max(TP53.up.DEG.ratio)
 which.max(TP53.down.DEG.ratio)
+
+
+# Supplementary Figure S1I
+colnames(TP53.DEGs)
+range(TP53.DEGs$avg_log2FC)
+TP53.DEGs.plot <- TP53.DEGs[is.finite(TP53.DEGs$avg_log2FC),]
+p.TP53.volcano <- EnhancedVolcano(TP53.DEGs.plot, lab = rownames(TP53.DEGs.plot), 
+                                  x = "avg_log2FC", y = "p_val", xlim = c(-100, 100), 
+                                  pCutoff = 0.05, 
+                                  FCcutoff = 1.5,
+                                  title = "TP53 v.s. unmutated status")
+p.TP53.volcano
+qs::qsave(p.TP53.volcano, paste0(R.dir, figure.s1.dor, "Volcano_TP53.qsave"))
+
+
+# Supplementary Figure S1J
+p.TP53.up.DEG.ratio <- ggplot(data.frame(Ratio = TP53.up.DEG.ratio), 
+                              aes(y = Ratio)) + 
+  geom_boxplot(fill = "slateblue", alpha = 0.2) + 
+  ylab("Ratio of upregulated DEGs in each eGRN") + xlab("")
+p.TP53.up.DEG.ratio
 
 
 # Obtain the top-five TFs regulating the overrepresented DEGs in eGRNs
@@ -568,8 +690,8 @@ p.TP53.STAT3.box <- get_boxplot(obj = obj, path = NULL, x.lab = "Sample",
 # Merge the boxplots
 p.TP53.box <- ggpubr::ggarrange(p.TP53.UMAP, p.TP53.MYOG1.box, p.TP53.MYOG2.box, 
                                 p.TP53.JUN.box, p.TP53.STAT3.box, 
-                                widths = c(5, 1, 1, 1, 1), 
-                                nrow = 1, labels = c("G", "H", "I", "J", "K"))
+                                widths = c(2, 1, 1, 1, 1), 
+                                nrow = 1, labels = LETTERS[6:10])
 # p.TP53.box <- p.TP53.UMAP | p.TP53.MYOG1.box | p.TP53.MYOG2.box | p.TP53.JUN.box | p.TP53.STAT3.box
 qs::qsave(p.TP53.box, paste0(work.dir, "Boxplots_GSVA_TP53.qsave"))
 
@@ -593,8 +715,8 @@ length(cox.minus.cells)
 ncol(lymph.obj)
 length(cox.plus.cells) / ncol(lymph.obj)
 length(cox.minus.cells) / ncol(lymph.obj)
-cox.phenotype <- c(rep("good", length(cox.plus.cells)), 
-                   rep("bad", length(cox.minus.cells)), 
+cox.phenotype <- c(rep("bad", length(cox.plus.cells)), 
+                   rep("good", length(cox.minus.cells)), 
                    rep("background", ncol(lymph.obj) - length(cox.plus.cells) - 
                          length(cox.minus.cells)))
 head(cox.phenotype)
@@ -602,11 +724,49 @@ names(cox.phenotype) <- c(cox.plus.cells, cox.minus.cells, setdiff(colnames(lymp
                                                                    c(cox.plus.cells, 
                                                                      cox.minus.cells)))
 head(cox.phenotype)
-cox.phenotype <- factor(cox.phenotype, levels = c("good", "background", "bad"))
+cox.phenotype <- factor(cox.phenotype, levels = c("bad", "background", "good"))
 cox.phenotype
 lymph.obj <- AddMetaData(object = lymph.obj, metadata = cox.phenotype, col.name = "survival")
 colnames(lymph.obj@meta.data)
 qs::qsave(lymph.obj, paste0(work.dir, "lymph_obj.qsave"))
+# Note: the good and bad are reversed in Figure 4.
+
+
+cox.dt <- rbindlist(lapply(irg.egrns, function(x) {
+  plus.ratio <- length(intersect(x$cells, cox.plus.cells)) / length(x$cells)
+  minus.ratio <- length(intersect(x$cells, cox.minus.cells)) / length(x$cells)
+  list(TF = x$TF, Plus = plus.ratio, Minus = minus.ratio)
+}))
+cox.dt <- cbind(eGRN = seq_along(irg.egrns), cox.dt)
+head(cox.dt)
+
+
+# Supplementary Figure S1K
+cox.dt
+dim(cox.dt)
+head(cox.dt)
+cox.stacked.df <- rbind(data.frame(eGRN = cox.dt$eGRN, 
+                                    Phenotype = rep("Bad", 
+                                                    nrow(cox.dt)), 
+                                    Ratio = cox.dt$Plus), 
+                         data.frame(eGRN = cox.dt$eGRN, 
+                                    Phenotype = rep("Good", 
+                                                    nrow(cox.dt)), 
+                                    Ratio = cox.dt$Minus), 
+                         data.frame(eGRN = cox.dt$eGRN, 
+                                    Phenotype = rep("Background", 
+                                                    nrow(cox.dt)), 
+                                    Ratio = 1 - cox.dt$Plus - cox.dt$Minus))
+dim(cox.stacked.df)
+head(cox.stacked.df)
+cox.stacked.df$Phenotype <- factor(cox.stacked.df$Phenotype, levels = c("Bad", "Background", 
+                                                                          "Good"))
+cox.stacked <- ggplot(cox.stacked.df, aes(fill = Phenotype, y = Ratio, x = eGRN)) + 
+  geom_bar(position = "fill", stat = "identity") + xlab("") + 
+  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank()) + 
+  scale_fill_manual(values = c("red", "grey", "blue"))
+cox.stacked
+qs::qsave(cox.stacked, paste0(R.dir, figure.s1.dor, "cox_stacked.qsave"))
 
 
 # DEG analysis
@@ -644,6 +804,27 @@ cox.down.DEG.ratio <- sapply(cox.eGRNs, function(x) {
 })
 which.max(cox.up.DEG.ratio)
 which.max(cox.down.DEG.ratio)
+
+
+# Supplementary Figure S1L
+colnames(cox.DEGs)
+range(cox.DEGs$avg_log2FC)
+cox.DEGs.plot <- cox.DEGs[is.finite(cox.DEGs$avg_log2FC),]
+p.cox.volcano <- EnhancedVolcano(cox.DEGs.plot, lab = rownames(cox.DEGs.plot), 
+                                  x = "avg_log2FC", y = "p_val", xlim = c(-200, 200), 
+                                  pCutoff = 0.05, 
+                                  FCcutoff = 1.5,
+                                  title = "Bad v.s. good survival")
+p.cox.volcano
+qs::qsave(p.cox.volcano, paste0(R.dir, figure.s1.dor, "Volcano_cox.qsave"))
+
+
+# Supplementary Figure S1M
+p.cox.up.DEG.ratio <- ggplot(data.frame(Ratio = cox.up.DEG.ratio), 
+                              aes(y = Ratio)) + 
+  geom_boxplot(fill = "slateblue", alpha = 0.2) + 
+  ylab("Ratio of upregulated DEGs in each eGRN") + xlab("")
+p.cox.up.DEG.ratio
 
 
 # # Select the most informative genes
@@ -799,15 +980,15 @@ p.cox.KLF5 <- get_KM_curve(meta.df = cox.KM.df, category = "GSVA", path = NULL, 
                           legend.title = "GSVA enrichment score")
 
 p.cox.box <- ggpubr::ggarrange(p.cox.UMAP, ggpubr::ggarrange(p.cox.MYCN1$plot, p.cox.MYCN1$table, 
-                                                             ncol = 1, heights = c(3, 1)), 
+                                                             ncol = 1, heights = c(2, 1)), 
                                ggpubr::ggarrange(p.cox.MYCN2$plot, p.cox.MYCN2$table, 
-                                                ncol = 1, heights = c(3, 1)),
+                                                ncol = 1, heights = c(2, 1)),
                                ggpubr::ggarrange(p.cox.JUN$plot, p.cox.JUN$table, 
-                                                ncol = 1, heights = c(3, 1)),
+                                                ncol = 1, heights = c(2, 1)),
                                ggpubr::ggarrange(p.cox.KLF5$plot, p.cox.KLF5$table, 
-                                                ncol = 1, heights = c(3, 1)),
-                               widths = c(5, 1, 1, 1, 1), 
-                                nrow = 1, labels = c("L", "M", "N", "O", "P"))
+                                                ncol = 1, heights = c(2, 1)),
+                               widths = c(2, 1, 1, 1, 1), 
+                                nrow = 1, labels = LETTERS[11:15])
 qs::qsave(p.cox.box, paste0(work.dir, "KM_curves_GSVA_survival.qsave"))
 # p.cox.box <- ggpubr::ggarrange(p.cox.UMAP, p.cox.MYCN1$plot / p.cox.MYCN1$table, 
 #                                p.cox.MYCN2$plot /  p.cox.MYCN2$table, 
@@ -824,16 +1005,40 @@ qs::qsave(p.cox.box, paste0(work.dir, "KM_curves_GSVA_survival.qsave"))
 
 
 # Merge all panels
-p.IRG <- ggpubr::ggarrange(p.boxplot, ggpubr::ggarrange(p.IgHV.box, 
-                                                        p.TP53.box, 
-                                                        p.cox.box, ncol = 1, 
-                                                        heights = c(1, 1, 1)), 
-                            ncol = 2, widths = c(1, 8), labels = c("A", NA))
+# p.IRG <- ggpubr::ggarrange(p.boxplot, ggpubr::ggarrange(p.IgHV.box, 
+#                                                         p.TP53.box, 
+#                                                         p.cox.box, ncol = 1, 
+#                                                         heights = c(1, 1, 1)), 
+#                             ncol = 2, widths = c(1, 8), labels = c("A", NA))
+# p.IRG <- ggpubr::ggarrange(ggpubr::ggarrange(p.IgHV.box,
+#                                                         p.TP53.box,
+#                                                         p.cox.box, ncol = 1,
+#                                                         heights = c(1, 1, 1)),
+#                            ggpubr::ggarrange(NA, NA, NA, NA, p.boxplot, nrow = 1, 
+#                                              widths = c(1, 1, 1, 1, 1),
+#                                              labels = c(NA, NA, NA, NA, "P")),
+#                            ncol = 1, heights = c(6, 1))
 
+
+# Remove the boxplots
+p.IRG <- ggpubr::ggarrange(p.IgHV.box,
+                  p.TP53.box,
+                  p.cox.box, ncol = 1,
+                  heights = c(1, 1, 1))
+p.IRG
+
+
+# p.IRG <- ggpubr::ggarrange(p.IgHV.box, 
+#                   p.TP53.box, 
+#                   p.cox.box, ncol = 1, 
+#                   heights = c(1, 1, 1))
 # save_image(p = p.IRG, path = paste0(work.dir, "IRG.eps"))
+# qs::qsave(p.boxplot, paste0(work.dir, "Boxplots.qsave"))
 qs::qsave(p.IRG, paste0(work.dir, "IRG_plots.qsave"))
 save_image(p = p.IRG, path = paste0(work.dir, "IRG.png"), 
            width = 6000, height = 5000)
+# save_image(p = p.boxplot, path = paste0(work.dir, "Boxplot.png"), 
+#            width = 6000, height = 5000)
 
 
 # # 1. Save the boxplots
