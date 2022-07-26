@@ -370,3 +370,76 @@ for (i in seq_along(supp.cistromes)) {
                     prefix = supp.names[i], method = "gene", 
                     path = paste0(table.dir, supp.names[i], "/"))
 }
+
+
+# This script will generate Supplementary Figure S1 (S1A-S1M) composed of 13 panels
+# and Supplementary Figure S2 (S2A-S2I) composed of 14 panels
+
+
+# Construct Supplementary Figure S1
+p.boxplot
+ggpubr::ggarrange(p.genes, p.peaks, p.cells, p.irg, 
+                  nrow = 2, ncol = 2)
+
+
+p.IgHV.stacked
+p.IgHV.volcano
+p.IgHV.up.DEG.ratio
+
+
+TP53.stacked
+p.TP53.volcano
+p.TP53.up.DEG.ratio
+
+
+cox.stacked
+p.cox.volcano
+p.cox.up.DEG.ratio
+
+
+p.S1 <- ggpubr::ggarrange(ggpubr::ggarrange(ggpubr::ggarrange(p.boxplot, p.IgHV.stacked, nrow = 2,
+                                                      labels = c(NA, "E")), 
+                                    p.IgHV.volcano, p.IgHV.up.DEG.ratio, 
+                                                nrow = 1, widths = c(4, 4, 1), 
+                                    labels = c(NA, LETTERS[6:7])), 
+                  ggpubr::ggarrange(TP53.stacked, p.TP53.volcano, p.TP53.up.DEG.ratio, 
+                                    nrow = 1, widths = c(4, 4, 1), 
+                                    labels = LETTERS[8:10]),
+                  ggpubr::ggarrange(cox.stacked, p.cox.volcano, p.cox.up.DEG.ratio, 
+                                    nrow = 1, widths = c(4, 4, 1), 
+                                    labels = LETTERS[11:13]),
+                  heights = c(1, 1, 1), 
+                  ncol = 1)
+p.S1
+save_image(p.S1, paste0(image.dir, "Supp_Figure_S1.png"), width = 3500, height = 5000)
+save_image(p.S1, paste0(image.dir, "Supp_Figure_S1.tiff"), width = 3500, height = 5000)
+
+
+# Pathway enrichment analysis
+pathway.list <- pblapply(supp.ids, function(i) {
+  tmp.enriched <- run_GO_and_KEGG(genes.ll = IRG.eGRNs[[i]]$genes, 
+                                        dbs = "KEGG", org = "human")$KEGG_2019_Human
+  tmp.enriched <- tmp.enriched[tmp.enriched$Adjusted.P.value < 0.05,]
+  dim(tmp.enriched)
+  tmp.enriched
+})
+sapply(pathway.list, nrow)
+pathway.selected <- pathway.list[-6]
+
+
+# Generate barplots
+Supp.2.dir <- paste0(image.dir, "Supp_Figure_S3/")
+dir.create(Supp.2.dir)
+supp.names.selected <- supp.names[-6]
+pblapply(seq_along(pathway.selected), function(i) {
+  x <- pathway.selected[[i]]
+  x <- x[1:min(nrow(x), 20),]
+  data <- data.frame(name = x$Term, 
+                    value = -log(x$P.value))
+  png(filename = paste0(Supp.2.dir, supp.names.selected[i], "_enriched.png"), 
+      width = 2000, height = 1500, res = 200)
+  par(mar=c(5.1, max(nchar(x$Term))/1.8, 4.1 ,2.1))
+  barplot(height = data$value, names = data$name, col = "#69b3a2", 
+          horiz = T, las = 1)
+  dev.off()
+})

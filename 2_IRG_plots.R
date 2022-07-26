@@ -71,7 +71,8 @@ library(ggplotify)
 
 # Supplementary Figure S1A-S1D
 p.boxplot <- ggpubr::ggarrange(p.genes, p.peaks, p.cells, p.irg, 
-                               ncol = 4)
+                               nrow = 1, ncol = 4, labels = LETTERS[1:4])
+p.boxplot
 figure.s1.dor <- "Figures_S1/"
 qs::qsave(p.boxplot, paste0(R.dir, figure.s1.dor, 
                             "Genes_CREs_cells_IRGs.qsave"))
