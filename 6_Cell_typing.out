@@ -1,0 +1,162 @@
+
+This module will switch Compiler environment to gnu/9.1.0 and load mkl/2019.0.5
+for R/4.1.0
+
+
+Lmod is automatically replacing "intel/19.0.5" with "gnu/9.1.0".
+
+
+Due to MODULEPATH changes, the following have been reloaded:
+  1) mvapich2/2.3.3
+
+Attaching SeuratObject
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+Loading required package: parallel
+
+Attaching package: ‘data.table’
+
+The following objects are masked from ‘package:dplyr’:
+
+    between, first, last
+
+   Tumor B cells Exhausted CD4+ T cells Exhausted CD8+ T cells
+1:           112                     52                     18
+2:            31                     25                     12
+3:            20                      2                      1
+   Tumor B cells Exhausted CD4+ T cells Exhausted CD8+ T cells
+1:     0.2372881             0.11016949            0.038135593
+2:     0.1731844             0.13966480            0.067039106
+3:     0.1818182             0.01818182            0.009090909
+[1] 0.2173913 1.0000000
+1
+
+2
+
+3
+
+4
+
+5
+
+41
+
+6
+
+7
+
+42
+
+8
+
+43
+
+44
+
+9
+
+45
+
+10
+
+48
+
+46
+
+47
+
+11
+
+12
+
+49
+
+13
+
+14
+
+50
+
+15
+
+16
+
+17
+
+18
+
+19
+
+20
+
+21
+
+22
+
+23
+
+24
+
+25
+
+26
+
+27
+
+28
+
+29
+
+30
+
+31
+
+32
+
+33
+
+34
+
+35
+
+36
+
+37
+
+38
+
+39
+
+40
+
+[1] 50 11
+          V1           V2           V3
+1: 0.9998436 7.842194e-23 8.172735e-08
+2: 0.9999906 8.934260e-14 3.520933e-08
+3: 0.9992227 6.879184e-01 6.076805e-01
+   Tumor B cells Exhausted CD4+ T cells Exhausted CD8+ T cells
+1:     0.9998436           7.842194e-23           8.172735e-08
+2:     0.9999906           8.934260e-14           3.520933e-08
+3:     0.9992227           6.879184e-01           6.076805e-01
+[1] 6.639788e-175  1.000000e+00
+[1] 7.303767e-174  1.100000e+01
+     Tumor B cells Exhausted CD4+ T cells Exhausted CD8+ T cells
+[1,]         FALSE                   TRUE                   TRUE
+[2,]         FALSE                   TRUE                   TRUE
+[3,]         FALSE                  FALSE                  FALSE
+ [1] 9 6 1 7 2 3 6 9 4 2 1 4 2 2 2 7 2 2 1 3 2 3 2 2 1 1 1 2 1 4 3 1 4 3 2 1 2 0
+[39] 0 1 6 3 2 1 1 1 2 1 1 1
+ [1]  3 11 19 25 26 27 29 32 36 40 44 45 46 48 49 50
+ [1]  1  2  4  5  6  7  8  9 10 12 13 14 15 16 17 18 20 21 22 23 24 28 30 31 33
+[26] 34 35 37 38 39 41 42 43 47
+[1] 50
+slurmstepd: error: *** JOB 12201836 ON p0240 CANCELLED AT 2022-07-27T22:10:04 ***
