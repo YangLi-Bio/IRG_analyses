@@ -526,3 +526,7 @@ head(exp.max.clusters)
 head(obj.celltyped$cell.type)
 exp.max.ari <- ARI(exp.max.clusters, obj.celltyped$cell.type)
 exp.max.ari
+
+
+# Copy cisTopic to normalize the matrix for each cell
+# Add a pseudocount to each cell
