@@ -385,9 +385,17 @@ p.tumor.STAT3.box <- get_boxplot(obj = obj, path = NULL, x.lab = "Sample",
 p.IgHV.box <- ggpubr::ggarrange(p.IgHV.UMAP, p.tumor.MYCN1.box, p.tumor.MYCN2.box, 
                                 p.tumor.JUN.box, p.tumor.STAT3.box, 
                                 widths = c(2, 1, 1, 1, 1), 
-                                nrow = 1, labels = LETTERS[1:5])
+                                nrow = 1, labels = LETTERS[3:7])
+p.IgHV.box
 # p.IgHV.box <- p.IgHV.UMAP | p.tumor.MYCN1.box | p.tumor.MYCN2.box | p.tumor.JUN.box | p.tumor.STAT3.box
 qs::qsave(p.IgHV.box, paste0(work.dir, "Boxplots_GSVA_IgHV.qsave"))
+save_image(p = p.IgHV.UMAP, path = paste0(image.dir, "UMAP_IgHV.eps"))
+p.IgHV.box.only <- ggpubr::ggarrange(p.tumor.MYCN1.box, p.tumor.MYCN2.box, 
+                                p.tumor.JUN.box, p.tumor.STAT3.box, 
+                                widths = c(1, 1, 1, 1), 
+                                nrow = 1)
+
+save_image(p = p.IgHV.box.only, path = paste0(image.dir, "Box_IgHV.eps"))
 
 
 ##################################################################################
@@ -692,7 +700,8 @@ p.TP53.STAT3.box <- get_boxplot(obj = obj, path = NULL, x.lab = "Sample",
 p.TP53.box <- ggpubr::ggarrange(p.TP53.UMAP, p.TP53.MYOG1.box, p.TP53.MYOG2.box, 
                                 p.TP53.JUN.box, p.TP53.STAT3.box, 
                                 widths = c(2, 1, 1, 1, 1), 
-                                nrow = 1, labels = LETTERS[6:10])
+                                nrow = 1, labels = LETTERS[8:12])
+p.TP53.box
 # p.TP53.box <- p.TP53.UMAP | p.TP53.MYOG1.box | p.TP53.MYOG2.box | p.TP53.JUN.box | p.TP53.STAT3.box
 qs::qsave(p.TP53.box, paste0(work.dir, "Boxplots_GSVA_TP53.qsave"))
 
@@ -989,7 +998,8 @@ p.cox.box <- ggpubr::ggarrange(p.cox.UMAP, ggpubr::ggarrange(p.cox.MYCN1$plot, p
                                ggpubr::ggarrange(p.cox.KLF5$plot, p.cox.KLF5$table, 
                                                 ncol = 1, heights = c(2, 1)),
                                widths = c(2, 1, 1, 1, 1), 
-                                nrow = 1, labels = LETTERS[11:15])
+                                nrow = 1, labels = LETTERS[13:17])
+p.cox.box
 qs::qsave(p.cox.box, paste0(work.dir, "KM_curves_GSVA_survival.qsave"))
 # p.cox.box <- ggpubr::ggarrange(p.cox.UMAP, p.cox.MYCN1$plot / p.cox.MYCN1$table, 
 #                                p.cox.MYCN2$plot /  p.cox.MYCN2$table, 
@@ -1022,11 +1032,24 @@ qs::qsave(p.cox.box, paste0(work.dir, "KM_curves_GSVA_survival.qsave"))
 
 
 # Remove the boxplots
-p.IRG <- ggpubr::ggarrange(p.IgHV.box,
+load(paste0(R.dir, "Visual.RData"))
+p.umap.dot <- ggpubr::ggarrange(p.celltype.umap, p.dot.eGRN.CT.pval.ratio, 
+                                widths = c(1, 2), labels = LETTERS[1:2])
+# p.umap.dot
+save_image(p = p.umap.dot, paste0(image.dir, "Cell_type_UMAP_dotplot.png"), 
+           width = 8000, height = 2000)
+p.IRG <- ggpubr::ggarrange(p.umap.dot, 
+  p.IgHV.box,
                   p.TP53.box,
                   p.cox.box, ncol = 1,
-                  heights = c(1, 1, 1))
+                  heights = c(1, 1, 1, 1))
 p.IRG
+save_image(p = p.IRG, path = paste0(image.dir, "IRG.png"), 
+           width = 6000, height = 6000)
+
+
+save_image(p.celltype.umap, path = paste0(image.dir, "Cell_type_UMAP.eps"))
+save_image(p.dot.eGRN.CT.pval.ratio, path = paste0(image.dir, "Dotplot_eGRN_celltype.eps"))
 
 
 # p.IRG <- ggpubr::ggarrange(p.IgHV.box, 
@@ -1036,7 +1059,8 @@ p.IRG
 # save_image(p = p.IRG, path = paste0(work.dir, "IRG.eps"))
 # qs::qsave(p.boxplot, paste0(work.dir, "Boxplots.qsave"))
 qs::qsave(p.IRG, paste0(work.dir, "IRG_plots.qsave"))
-save_image(p = p.IRG, path = paste0(work.dir, "IRG.png"), 
+
+save_image(p = p.IRG, path = paste0(image.dir, "IRG.eps"), 
            width = 6000, height = 5000)
 # save_image(p = p.boxplot, path = paste0(work.dir, "Boxplot.png"), 
 #            width = 6000, height = 5000)

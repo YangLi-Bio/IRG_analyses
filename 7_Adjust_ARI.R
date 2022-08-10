@@ -124,15 +124,6 @@ apply(regularMatrix, 1, sum) %>% range
 apply(regularMatrix, 2, sum) %>% range
 # regularMatrix <- regularMatrix / apply(regularMatrix, 1, max)
 regularMatrix[1:3, 1:3]
-
-
-# Try different values
-# 1: 0.2491488 (Bingo)
-# 2: 0.07530222
-# 4: 0.06349345
-# 8: 0.09066146
-# 16: 0.126822
-# 32: 0.06485978
 disRegularMatrix <- 1 - regularMatrix
 regularMatrix[1:3, 1:3]
 disRegularMatrix[1:3, 1:3]
