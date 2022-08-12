@@ -38,6 +38,23 @@ length(irg.ratios)
 range(irg.ratios)
 
 
+# Functions
+hyper_test_enhancer_grns <- function(enhancer.grns, cells, total) {
+  
+  dt <- rbindlist(pbmclapply(enhancer.grns, function(x) {
+    x.cells <- intersect(x$cells, total)
+    overlap <- length(intersect(x.cells, cells))
+    group1 <- length(x.cells)
+    group2 <- length(intersect(cells, total))
+    pval <- phyper(overlap - 1, group2, length(total) - group2, 
+                   group1, lower.tail = FALSE)
+    list(overlap, group1, group2, length(total), pval)
+  }, mc.cores = detectCores()))
+  colnames(dt) <- c("Overlap", "Group1", "Group2", "Total", "Pvalue")
+  dt
+}
+
+
 ##################################################################################
 #                                                                                #
 #    1. Boxplots of the number of cells, genes, CREs, and IRG ratios in eGRNs    #
@@ -86,6 +103,7 @@ qs::qsave(p.boxplot, paste0(R.dir, figure.s1.dor,
 
 
 # Load the IgHV phenotype data
+# alpha = 0.5
 tumor.dir <- "/fs/ess/PCON0022/liyang/STREAM/case_1_IRG/1_classification_GSE113386/"
 tumor.scissor.file <- "GSE113386_single_param.qsave"
 tumor.scissor.cells <- qs::qread(paste0(tumor.dir, tumor.scissor.file))
@@ -104,6 +122,24 @@ tumor.dt <- rbindlist(lapply(irg.egrns, function(x) {
 }))
 tumor.dt <- cbind(eGRN = seq_along(irg.egrns), tumor.dt)
 head(tumor.dt)
+
+
+# Hypergeometric test for IgHV plus cells
+ighv.plus.pval <- hyper_test_enhancer_grns(enhancer.grns = eGRNs, cells = tumor.plus.cells, 
+                         total = ncol(lymph.obj))
+apply(ighv.plus.pval, 2, range)
+dim(ighv.plus.pval)
+ighv.plus.ids <- which(ighv.plus.pval$Pvalue < 0.05)
+ighv.plus.ids
+
+
+# Hypergeometric test for IgHV minus cells
+ighv.minus.pval <- hyper_test_enhancer_grns(enhancer.grns = eGRNs, cells = tumor.minus.cells, 
+                                           total = ncol(lymph.obj))
+apply(ighv.minus.pval, 2, range)
+dim(ighv.minus.pval)
+ighv.minus.pval <- which(ighv.minus.pval$Pvalue < 0.05)
+ighv.minus.pval
 
 
 p.IgHV.ratio <- ggplot(tumor.dt, aes(y = Plus)) + 
@@ -300,6 +336,8 @@ qs::qsave(p.IgHV.UMAP, paste0(work.dir, "IgHV_UMAP.qsave"))
 
 
 # Generate boxplots for the two MYCN eGRNs
+ighv.sig.eGRNs <- tumor.eGRNs[ighv.plus.ids]
+table(sapply(ighv.sig.eGRNs, "[[", "TF"))
 tumor.MYCN.ids <- which(sapply(tumor.eGRNs, "[[", "TF") == "MYCN")
 MYCN.tumor.pval <- lapply(tumor.MYCN.ids, function(i) {
   x <- tumor.gsva.m[i, names(which(tumor.bulk.meta == 1))]
@@ -310,6 +348,7 @@ names(MYCN.tumor.pval) <- tumor.MYCN.ids
 
 
 # Generate boxplot for the first eGRN of MYCN
+ighv.plus.ids
 i <- tumor.MYCN.ids[1]
 x <- tumor.gsva.m[i, names(which(tumor.bulk.meta == 1))]
 y <- tumor.gsva.m[i, names(which(tumor.bulk.meta == 0))]
@@ -325,6 +364,7 @@ p.tumor.MYCN1.box <- get_boxplot(obj = obj, path = NULL, x.lab = "Sample",
 
 
 # Generate boxplot for the second eGRN of MYCN
+ighv.plus.ids
 i <- tumor.MYCN.ids[2]
 x <- tumor.gsva.m[i, names(which(tumor.bulk.meta == 1))]
 y <- tumor.gsva.m[i, names(which(tumor.bulk.meta == 0))]
@@ -334,6 +374,49 @@ obj$Sample <- factor(obj$Sample, levels = c("IgHV", "unmutated"))
 p.tumor.MYCN2.box <- get_boxplot(obj = obj, path = NULL, x.lab = "Sample",
                                  y.lab = "GSVA", color = "black", title = "MYCN", 
                                  fill = c("IgHV" = "red", "unmutated" = "blue"))
+
+
+
+
+# Generate boxplot for the first eGRN of MYOG
+tumor.MYOG.ids <- which(sapply(tumor.eGRNs, "[[", "TF") == "MYOG")
+tumor.MYOG.ids
+i <- tumor.MYOG.ids[1]
+x <- tumor.gsva.m[i, names(which(tumor.bulk.meta == 1))]
+y <- tumor.gsva.m[i, names(which(tumor.bulk.meta == 0))]
+obj <- data.frame(Sample = c(rep("tumor", length(x)), rep("unmutated", length(y))), 
+                  GSVA = c(x, y))
+obj$Sample <- factor(obj$Sample, levels = c("tumor", "unmutated"))
+p.tumor.MYOG1.box <- get_boxplot(obj = obj, path = NULL, x.lab = "Sample",
+                                y.lab = "GSVA", color = "black", title = "MYOG", 
+                                fill = c("tumor" = "red", "unmutated" = "blue"))
+p.tumor.MYOG1.box
+
+
+# Generate boxplot for the second eGRN of MYOG
+i <- tumor.MYOG.ids[2]
+x <- tumor.gsva.m[i, names(which(tumor.bulk.meta == 1))]
+y <- tumor.gsva.m[i, names(which(tumor.bulk.meta == 0))]
+obj <- data.frame(Sample = c(rep("tumor", length(x)), rep("unmutated", length(y))), 
+                  GSVA = c(x, y))
+obj$Sample <- factor(obj$Sample, levels = c("tumor", "unmutated"))
+p.tumor.MYOG2.box <- get_boxplot(obj = obj, path = NULL, x.lab = "Sample",
+                                y.lab = "GSVA", color = "black", title = "MYOG", 
+                                fill = c("tumor" = "red", "unmutated" = "blue"))
+p.tumor.MYOG2.box
+
+
+# Generate boxplot for the third eGRN of MYOG
+i <- tumor.MYOG.ids[3]
+x <- tumor.gsva.m[i, names(which(tumor.bulk.meta == 1))]
+y <- tumor.gsva.m[i, names(which(tumor.bulk.meta == 0))]
+obj <- data.frame(Sample = c(rep("tumor", length(x)), rep("unmutated", length(y))), 
+                  GSVA = c(x, y))
+obj$Sample <- factor(obj$Sample, levels = c("tumor", "unmutated"))
+p.tumor.MYOG3.box <- get_boxplot(obj = obj, path = NULL, x.lab = "Sample",
+                                 y.lab = "GSVA", color = "black", title = "MYOG", 
+                                 fill = c("tumor" = "red", "unmutated" = "blue"))
+p.tumor.MYOG3.box
 
 
 # Generate boxplot for JUN (co-factor of STAT3)
@@ -382,7 +465,7 @@ p.tumor.STAT3.box <- get_boxplot(obj = obj, path = NULL, x.lab = "Sample",
 
 
 # Merge the boxplots
-p.IgHV.box <- ggpubr::ggarrange(p.IgHV.UMAP, p.tumor.MYCN1.box, p.tumor.MYCN2.box, 
+p.IgHV.box <- ggpubr::ggarrange(p.IgHV.UMAP, p.tumor.MYOG2.box, p.tumor.MYOG3.box, 
                                 p.tumor.JUN.box, p.tumor.STAT3.box, 
                                 widths = c(2, 1, 1, 1, 1), 
                                 nrow = 1, labels = LETTERS[3:7])
@@ -405,15 +488,57 @@ save_image(p = p.IgHV.box.only, path = paste0(image.dir, "Box_IgHV.eps"))
 ##################################################################################
 
 
+# Tune parameters
+# alpha = 0.1
+# 68.158%
+tp53.bulk <- qs::qread("/fs/ess/PCON0022/liyang/STREAM/case_1_IRG/3_TP53_GSE11038/bulk.qsave")
+tp53.exp <- tp53.bulk$matrix # get the matrix
+tp53.phenotype <- tp53.bulk$phenotype # get the phenotype
+tp53.tag <- tp53.bulk$tag # get the list of phenotype
+tp53.scissored.0.1 <- Scissor(tp53.exp, sc_dataset, tp53.phenotype, 
+                              tag = tp53.tag, alpha = 0.1, 
+                              family = "binomial", 
+                              Save_file = "/fs/ess/PCON0022/liyang/STREAM/case_1_IRG/Rfile/TP53_scissor_0.1.RData")
+
+
+# alpha = 0.2
+# 54.843%
+# tp53.bulk <- qs::qread("/fs/ess/PCON0022/liyang/STREAM/case_1_IRG/3_TP53_GSE11038/bulk.qsave")
+# tp53.exp <- tp53.bulk$matrix # get the matrix
+# tp53.phenotype <- tp53.bulk$phenotype # get the phenotype
+# tp53.tag <- tp53.bulk$tag # get the list of phenotype
+tp53.scissored.0.2 <- Scissor(tp53.exp, sc_dataset, tp53.phenotype, 
+                              tag = tp53.tag, alpha = 0.2, 
+                              family = "binomial", 
+                              Save_file = "/fs/ess/PCON0022/liyang/STREAM/case_1_IRG/Rfile/TP53_scissor_0.2.RData")
+
+
+# Sequence parameters (0.6 - 0.9)
+# alpha = 0.7
+# 17.151%
+tp53.scissored.seq <- qs::qread("/fs/ess/PCON0022/liyang/STREAM/case_1_IRG/3_TP53_GSE11038/3_TP53_GSE11038_seq_param.qsave")
+tp53.scissored.seq
+sapply(tp53.scissored.seq, length)
+
+
+# alpha = 0.3
+# tp53.scissor.0.5 <- tp53.scissor.backup
+TP53.scissor.cells <- qs::qread(paste0(work.dir, bulk.path, "/", bulk.path, 
+                                       "_single_param_0.3.qsave"))
+TP53.scissor.cells
+sapply(TP53.scissor.cells, length)
+
+
 # Load the TP53 phenotype data
+# alpha: 0.5
+# 44.356%
 TP53.dir <- "/fs/ess/PCON0022/liyang/STREAM/case_1_IRG/3_TP53_GSE11038/"
 TP53.scissor.file <- "3_TP53_GSE11038_single_param.qsave"
-TP53.scissor.cells <- qs::qread(paste0(TP53.dir, TP53.scissor.file))
+TP53.scissor.cells <- tp53.scissored.seq
+# TP53.scissor.cells <- qs::qread(paste0(TP53.dir, TP53.scissor.file))
 names(TP53.scissor.cells)
 # lymph.obj <- readRDS(rds.path) # contains all the cells
 ncol(lymph.obj)
-TP53.plus.cells <- TP53.scissor.cells$Scissor_pos
-TP53.minus.cells <- TP53.scissor.cells$Scissor_neg
 length(TP53.plus.cells) / ncol(lymph.obj)
 length(TP53.minus.cells) / ncol(lymph.obj)
 library(data.table)
@@ -438,6 +563,78 @@ length(TP53.phenotype)
 names(TP53.phenotype) <- c(TP53.plus.cells, TP53.minus.cells, setdiff(colnames(lymph.obj), 
                                                                       c(TP53.plus.cells, 
                                                                         TP53.minus.cells)))
+
+
+# Hypergeometric test for TP53 plus cells in T cells
+TP53.scissor.cells <- tp53.scissored.seq # alpha = 0.7; ratio = 17.151%
+TP53.plus.cells <- TP53.scissor.cells$Scissor_pos
+TP53.minus.cells <- TP53.scissor.cells$Scissor_neg
+
+
+
+
+
+
+# Identify eGRNs significantly enriched in Scissor+/- cells restricted to T cells
+t.TP53.plus.pval <- hyper_test_enhancer_grns(enhancer.grns = eGRNs, cells = TP53.plus.cells, 
+                                           total = t.cells)
+apply(t.TP53.plus.pval, 2, range)
+dim(t.TP53.plus.pval)
+t.TP53.plus.ids <- which(t.TP53.plus.pval$Pvalue < 0.05)
+t.TP53.plus.ids
+
+
+# Hypergeometric test for TP53 minus cells in T cells
+t.TP53.minus.pval <- hyper_test_enhancer_grns(enhancer.grns = eGRNs, cells = TP53.minus.cells, 
+                                            total = t.cells)
+apply(t.TP53.minus.pval, 2, range)
+dim(t.TP53.minus.pval)
+t.TP53.minus.ids <- which(t.TP53.minus.pval$Pvalue < 0.05)
+t.TP53.minus.ids
+
+
+
+
+
+
+# Identify eGRNs significantly enriched in Scissor+/- cells restricted to T cells
+other.TP53.plus.pval <- hyper_test_enhancer_grns(enhancer.grns = eGRNs, cells = TP53.plus.cells, 
+                                             total = other.cells)
+apply(other.TP53.plus.pval, 2, range)
+dim(other.TP53.plus.pval)
+other.TP53.plus.ids <- which(other.TP53.plus.pval$Pvalue < 0.05)
+other.TP53.plus.ids
+
+
+# Hypergeometric test for TP53 minus cells in T cells
+# No significant eGRN was found
+other.TP53.minus.pval <- hyper_test_enhancer_grns(enhancer.grns = eGRNs, cells = TP53.minus.cells, 
+                                              total = other.cells)
+apply(other.TP53.minus.pval, 2, range)
+dim(other.TP53.minus.pval)
+other.TP53.minus.ids <- which(other.TP53.minus.pval$Pvalue < 0.05)
+other.TP53.minus.ids
+
+
+
+
+
+# Since two distinct groups of eGRNs were active in T cells and other cell types, 
+# we inspect each of them, respectively.
+obj.celltyped <- qs::qread(paste0(R.dir, "Obj_celltyped.qsave"))
+lymph.obj <- obj.celltyped
+rm(obj.celltyped)
+table(lymph.obj$cell.type)
+t.celltypes <- levels(lymph.obj$cell.type)[c(2:5, 7:8)]
+other.celltypes <- setdiff(levels(lymph.obj$cell.type), t.celltypes)
+t.celltypes
+other.celltypes
+t.cells <- colnames(lymph.obj)[which(lymph.obj$cell.type %in% t.celltypes)]
+dim(lymph.obj) # 70469 14104
+length(t.cells) # 8900
+other.cells <- setdiff(colnames(lymph.obj), t.cells)
+length(other.cells) # 5204
+
 
 # Supplementary Figure S1H
 TP53.dt
@@ -749,6 +946,24 @@ cox.dt <- rbindlist(lapply(irg.egrns, function(x) {
 }))
 cox.dt <- cbind(eGRN = seq_along(irg.egrns), cox.dt)
 head(cox.dt)
+
+
+# Hypergeometric test for cox plus cells
+cox.plus.pval <- hyper_test_enhancer_grns(enhancer.grns = eGRNs, cells = cox.plus.cells, 
+                                           total = ncol(lymph.obj))
+apply(cox.plus.pval, 2, range)
+dim(cox.plus.pval)
+cox.plus.ids <- which(cox.plus.pval$Pvalue < 0.05)
+cox.plus.ids
+
+
+# Hypergeometric test for cox minus cells
+cox.minus.pval <- hyper_test_enhancer_grns(enhancer.grns = eGRNs, cells = cox.minus.cells, 
+                                            total = ncol(lymph.obj))
+apply(cox.minus.pval, 2, range)
+dim(cox.minus.pval)
+cox.minus.pval <- which(cox.minus.pval$Pvalue < 0.05)
+cox.minus.pval
 
 
 # Supplementary Figure S1K
