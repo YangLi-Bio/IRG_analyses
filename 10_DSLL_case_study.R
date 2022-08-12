@@ -326,6 +326,13 @@ length(cox.cts.receptors) # 4
 
 
 # Locate the ligand-receptor interactions and asssociated cell types
-lig.rec.pairs[lig.rec.pairs$ligand %in% tp53.cts.cof.ligands & 
-                lig.rec.pairs$receptor %in% cox.cts.receptors, c(1:4, 7, 9)]
-# To-do: Tumor B prol and Tumor B cells
+tp53.cox.lig.rec.pairs <- lig.rec.pairs[lig.rec.pairs$ligand %in% tp53.cts.cof.ligands & 
+                lig.rec.pairs$receptor %in% cox.cts.receptors,]
+dim(tp53.cox.lig.rec.pairs[, c(1:4, 7, 9)]) # 33
+tp53.cox.lig.rec.pairs[tp53.cox.lig.rec.pairs$source == "Normal B" & 
+                         tp53.cox.lig.rec.pairs$target == "Tumor B prol",]
+tp53.cox.lig.rec.pairs[tp53.cox.lig.rec.pairs$source == "Tumor B prol" & 
+                         tp53.cox.lig.rec.pairs$target == "Tumor B",]
+# To-do:
+# 1. Normal B, Tumor B prol, and Tumor B cells
+# 2. Find the TFs or co-factors triggered by CD22
